@@ -10,21 +10,25 @@ class CPU:
         self.ram = [0] * 256
         # regular registers
         self.reg = [0] * 8
+        self.reg.append(0xf4)
         # internal registers
         self.pc = 0 # program counter, address of the currently executing instruction
         # self.ir = 0 # instruction register, contains a copy of the currently exexcuting instruction
         # self.mar = 0 # memory address register, holds the memory address we're reading or writing
         # self.mdr = 0 # memory data register, holds the value to write or the value just read
         self.fl = 0 # flags register, holds the current flags status. thest flags can change based on the operands given to the CMP opcode
-        
+        self.sp = 8
+
         self.instructions = {
             0b10000010: self.LDI,
             0b01000111: self.PRN,
             0b10100000: self.ADD,
             0b10100001: self.SUB,
-            0b10100010: self.MUL
+            0b10100010: self.MUL,
             # 0b10100011: self.DIV
-            # 0b10100100: self.MOD
+            # 0b10100100: self.MOD,
+            0b01000101: self.PUSH,
+            0b01000110: self.POP
         }
 
         # clear pc everytime run cpu
@@ -115,6 +119,24 @@ class CPU:
         op_a, op_b = self.load_ops()
         self.alu("MUL", op_a, op_b)
 
+    # def PUSH(self):
+    #     self.reg[self.sp] -= 1
+    #     self.pc += 1
+    #     new_reg = self.ram_read(self.pc)
+    #     self.ram_write(self.reg[self.sp], self.reg[new_reg])
+    def PUSH(self):
+        self.reg[self.sp]-=1
+        self.pc+=1
+        reg = self.ram_read(self.pc)
+        self.ram_write(self.reg[self.sp], self.reg[reg])
+
+    def POP(self):
+        self.pc += 1
+        register = self.ram_read(self.pc)
+        data = self.ram_read(self.reg[self.sp])
+        self.reg[register] = data
+        self.reg[self.sp] += 1
+
     def run(self):
         """Run the CPU."""
         '''It needs to read the memory address that's stored in register PC, and store that result in IR, the Instruction Register. 
@@ -132,24 +154,3 @@ class CPU:
             else:
                 self.instructions[ir]()
                 self.pc += 1
-
-            # LDI or save an integer
-            # elif ir == 0b10000010:
-            #     operand_a = self.ram_read(self.pc + 1)
-            #     operand_b = self.ram_read(self.pc + 2)
-            #     self.reg[operand_a] = operand_b
-            #     self.pc += 3
-            # # PRN or print register
-            # elif ir == 0b01000111:
-            #     print("self.ram_read(self.pc + 1) = ", self.ram_read(self.pc + 1))
-            #     self.pc += 2
-            # # elif ir == num:
-            # #     pass
-            # # elif ir == num:
-            # #     pass
-            # # elif ir == num:
-            # #     pass
-            # # elif ir == num:
-            # #     pass
-            # else:
-            #     print(f"unknown instruction at address {self.pc}")
