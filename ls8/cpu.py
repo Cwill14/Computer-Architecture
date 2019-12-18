@@ -20,6 +20,11 @@ class CPU:
         self.instructions = {
             0b10000010: self.LDI,
             0b01000111: self.PRN,
+            0b10100000: self.ADD,
+            0b10100001: self.SUB,
+            0b10100010: self.MUL
+            # 0b10100011: self.DIV
+            # 0b10100100: self.MOD
         }
 
         # clear pc everytime run cpu
@@ -54,7 +59,13 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+            self.reg[reg_a] %= 0b100000000
+        elif op == "SUB":
+            self.reg[reg_a] -= self.reg[reg_b]
+            self.reg[reg_a] %= 0b100000000
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+            self.reg[reg_a] %= 0b100000000
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -78,16 +89,31 @@ class CPU:
 
         print()
 
-    def LDI(self):
-        operand_a = self.ram_read(self.pc + 1)
-        operand_b = self.ram_read(self.pc + 2)
-        self.reg[operand_a] = operand_b
+    def load_ops(self):
+        op_a = self.ram_read(self.pc + 1)
+        op_b = self.ram_read(self.pc + 2)
         self.pc += 2
+        return op_a, op_b
+
+    def LDI(self):
+        op_a, op_b = self.load_ops()
+        self.reg[op_a] = op_b
 
     def PRN(self):
         print(self.reg[self.ram_read(self.pc + 1)])
         self.pc += 1
 
+    def ADD(self):
+        op_a, op_b = self.load_ops()
+        self.alu("ADD", op_a, op_b)
+    
+    def SUB(self):
+        op_a, op_b = self.load_ops()
+        self.alu("SUB", op_a, op_b)
+
+    def MUL(self):
+        op_a, op_b = self.load_ops()
+        self.alu("MUL", op_a, op_b)
 
     def run(self):
         """Run the CPU."""
