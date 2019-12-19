@@ -10,6 +10,7 @@ class CPU:
         self.ram = [0] * 256
         # regular registers
         self.reg = [0] * 8
+        # adds 256 bits of storage
         self.reg.append(0xf4)
         # internal registers
         self.pc = 0 # program counter, address of the currently executing instruction
@@ -30,8 +31,6 @@ class CPU:
             0b01000101: self.PUSH,
             0b01000110: self.POP
         }
-
-        # clear pc everytime run cpu
 
     def load(self):
         """Load a program into memory."""

@@ -59,5 +59,22 @@ while running:
         print(registers[reg_num])
         pc += 2
 
+    elif current_instruction == CALL:
+        # push the return address on the stack
+        return_address = pc + 2
+        registers[SP] -= 1
+        memory[registers[SP]] = return_address 
+
+        # set the PC to the value in the register
+        reg_num = memory[pc + 1]
+        sub_address = registers[reg_num]
+        pc = sub_address
+
+    elif current_instruction == RET:
+        return_address = memory[registers[SP]]
+        registers[SP] += 1
+        # store it in the pc
+        pc = return_address
+
     else:
         print(f"unknown instruction at address {pc}")
