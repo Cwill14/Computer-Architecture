@@ -1,5 +1,5 @@
 """CPU functionality."""
-
+0b01010110
 import sys
 
 class CPU:
@@ -17,7 +17,7 @@ class CPU:
         # self.ir = 0 # instruction register, contains a copy of the currently exexcuting instruction
         # self.mar = 0 # memory address register, holds the memory address we're reading or writing
         # self.mdr = 0 # memory data register, holds the value to write or the value just read
-        self.fl = 0 # flags register, holds the current flags status. thest flags can change based on the operands given to the CMP opcode
+        self.fl = 0b00000000 # flags register, holds the current flags status. thest flags can change based on the operands given to the CMP opcode
         self.sp = 8
 
         self.instructions = {
@@ -32,7 +32,11 @@ class CPU:
             0b01000110: self.POP,
             0b01010000: self.CALL,
             0b00010001: self.RET,
-            0b00000000: self.NOP
+            0b00000000: self.NOP,
+            0b10100111: self.CMP,
+            0b01010100: self.JMP,
+            0b01010101: self.JEQ,
+            0b01010110: self.JNE
         }
 
         # 0b00011000 == 24
@@ -74,6 +78,14 @@ class CPU:
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
             self.reg[reg_a] %= 0b100000000
+        elif op == "CMP":
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.fl = 0b00000001
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.fl = 0b00000010
+            else:
+                self.fl = 0b00000100
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -106,6 +118,7 @@ class CPU:
     def LDI(self):
         op_a, op_b = self.load_ops()
         self.reg[op_a] = op_b
+        # self.pc += 1
 
     def PRN(self):
         print(self.reg[self.ram_read(self.pc + 1)])
@@ -153,6 +166,30 @@ class CPU:
     def NOP(self):
         pass
 
+    def CMP(self):
+        op_a, op_b = self.load_ops()
+        self.alu("CMP", op_a, op_b)
+
+    def JMP(self):
+        # register = self.ram_read(self.pc + 1)
+        self.pc += 1
+        register = self.ram_read(self.pc)
+        self.pc = self.reg[register] - 1
+
+    def JNE(self):
+        # register = self.ram_read(self.pc + 1)
+        self.pc += 1
+        register = self.ram_read(self.pc)
+        if self.fl is not 0b00000001:
+            self.pc = self.reg[register] - 1
+
+    def JEQ(self):
+        # register = self.ram_read(self.pc + 1)
+        self.pc += 1
+        register = self.ram_read(self.pc)
+        if self.fl == 0b00000001:
+            self.pc = self.reg[register] - 1
+
     def run(self):
         running = True
 
@@ -160,12 +197,15 @@ class CPU:
             ir = self.ram[self.pc]
             # ^^ instruction register
 
-            # HLT or halt
-            if ir == 0b00000001:
+            if ir not in self.instructions:      
+                print(f"Unknown command at {self.pc}. Command: {bin(ir)} <-- {ir}")
+                sys.exit(1)
+            # if ir == 0b00000001:
+            elif ir == 0b00000001:
                 running = False
-            # elif ir not in self.instructions:      
-            #     print(f"Unknown command at {self.pc}", "Command give: ", self.reg[self.pc])
-            #     sys.exit(1)
             else:
+                # print("self.pc = ", self.pc)
+                # print("self.reg[2] = ", self.reg[2])
+                # print(f"ir = {bin(ir)} <-- {ir}")
                 self.instructions[ir]()
                 self.pc += 1
