@@ -29,8 +29,13 @@ class CPU:
             # 0b10100011: self.DIV
             # 0b10100100: self.MOD,
             0b01000101: self.PUSH,
-            0b01000110: self.POP
+            0b01000110: self.POP,
+            0b01010000: self.CALL,
+            0b00010001: self.RET,
+            0b00000000: self.NOP
         }
+
+        # 0b00011000 == 24
 
     def load(self):
         """Load a program into memory."""
@@ -118,16 +123,12 @@ class CPU:
         op_a, op_b = self.load_ops()
         self.alu("MUL", op_a, op_b)
 
-    # def PUSH(self):
-    #     self.reg[self.sp] -= 1
-    #     self.pc += 1
-    #     new_reg = self.ram_read(self.pc)
-    #     self.ram_write(self.reg[self.sp], self.reg[new_reg])
     def PUSH(self):
         self.reg[self.sp]-=1
         self.pc+=1
         reg = self.ram_read(self.pc)
         self.ram_write(self.reg[self.sp], self.reg[reg])
+        # self.pc += 1
 
     def POP(self):
         self.pc += 1
@@ -135,21 +136,36 @@ class CPU:
         data = self.ram_read(self.reg[self.sp])
         self.reg[register] = data
         self.reg[self.sp] += 1
+        # self.pc += 1
+
+    def CALL(self):
+        return_address = self.pc + 1
+        self.reg[self.sp] -= 1
+        self.ram_write(self.reg[self.sp], return_address)
+
+        reg_num = self.ram_read(self.pc + 1)
+        self.pc = self.reg[reg_num]
+
+    def RET(self):
+        self.pc = self.ram_read(self.reg[self.sp])
+        self.reg[self.sp] += 1
+
+    def NOP(self):
+        pass
 
     def run(self):
-        """Run the CPU."""
-        '''It needs to read the memory address that's stored in register PC, and store that result in IR, the Instruction Register. 
-        This can just be a local variable in run().'''
         running = True
 
         while running:
-            # ir = self.ram_read(self.pc)
             ir = self.ram[self.pc]
             # ^^ instruction register
 
             # HLT or halt
             if ir == 0b00000001:
                 running = False
+            # elif ir not in self.instructions:      
+            #     print(f"Unknown command at {self.pc}", "Command give: ", self.reg[self.pc])
+            #     sys.exit(1)
             else:
                 self.instructions[ir]()
                 self.pc += 1
